@@ -1,92 +1,88 @@
-package org.example.project
+package org.example.project                           // Shared package for multiplatform code
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import org.jetbrains.compose.resources.decodeToImageBitmap
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Face // Inbuilt icon
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.isEmpty
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.animation.*                     // Animations (not used yet, but good to have)
+import androidx.compose.foundation.Image                // Displays bitmap images
+import androidx.compose.foundation.background           // Background color modifier
+import androidx.compose.foundation.layout.*             // All basic layout composables
+import androidx.compose.foundation.lazy.grid.*          // Grid layout for images
+import androidx.compose.foundation.shape.RoundedCornerShape // Rounded corners
+import androidx.compose.material.icons.Icons            // Material icons collection
+import androidx.compose.material.icons.filled.*         // Filled style icons (Add, Clear, Face)
+import org.jetbrains.compose.resources.decodeToImageBitmap // Multiplatform image decoding
+import androidx.compose.material3.*                     // Material 3 components (Card, Scaffold, etc.)
+import androidx.compose.runtime.*                        // Core Compose state & remember
+import androidx.compose.ui.Alignment                     // Center, top-end, etc.
+import androidx.compose.ui.Modifier                      // Modifier chain builder
+import androidx.compose.ui.draw.clip                     // Clip shapes
+import androidx.compose.ui.graphics.Color               // Colors
+import androidx.compose.ui.graphics.ImageBitmap         // Decoded image type
+import androidx.compose.ui.layout.ContentScale          // Crop, Fit, etc. image scaling
+import androidx.compose.ui.text.font.FontWeight         // Bold, etc.
+import androidx.compose.ui.unit.dp                      // Density-independent pixels
+import androidx.compose.ui.unit.sp                       // Scalable pixels for text
+
 /**
- * Represents a picked image file.
- * @param name The display name or generated ID.
- * @param data The raw bytes of the image.
+ * Data class that holds one picked image.
+ * Used to store both the name (for display/key) and raw bytes.
  */
-data class ImageFile(
-    val name: String,
-    val data: ByteArray
+data class ImageFile(                                 // Simple holder for picked image
+    val name: String,                                 // Display name or generated ID
+    val data: ByteArray                               // Raw image bytes from picker
 )
+
 /**
- * Main entry point for the Multiplatform Image Picker.
+ * Root composable – main screen of the multiplatform gallery app.
+ * Uses Material 3 dark theme, Scaffold layout, and manages picked images state.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)              // Allows usage of newer Material 3 APIs
 @Composable
-fun App() {
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        val pickedImages = remember { mutableStateListOf<ImageFile>() }
-        var showPicker by remember { mutableStateOf(false) }
-        var allowMultiple by remember { mutableStateOf(true) }
-        ImagePicker(
-            show = showPicker,
-            allowMultiple =allowMultiple,
-            onImagesSelected = { images ->
-                showPicker = false
-                images.forEach{ data ->
-                    val fileName = "IMG_${pickedImages.size + 1}"
-                    pickedImages.add(ImageFile(fileName, data))
+fun App() {                                           // Main entry point composable
+    MaterialTheme(colorScheme = darkColorScheme()) {  // Apply dark theme to whole app
+        val pickedImages = remember { mutableStateListOf<ImageFile>() }  // Observable list of images
+        var showPicker by remember { mutableStateOf(false) }  // Controls when picker appears
+        var allowMultiple by remember { mutableStateOf(true) }  // Toggle single/multi mode
+
+        ImagePicker(                                  // Cross-platform picker (expect/actual)
+            show = showPicker,                        // Open when this is true
+            allowMultiple = allowMultiple,            // Allow picking several images
+            onImagesSelected = { images ->            // Called when user finishes picking
+                showPicker = false                    // Close picker after selection
+                images.forEach { data ->              // Process each picked ByteArray
+                    val fileName = "IMG_${pickedImages.size + 1}"  // Simple incremental name
+                    pickedImages.add(ImageFile(fileName, data))    // Add to displayed list
                 }
             }
         )
 
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
+        Scaffold(                                     // Main screen structure: top bar + FAB + content
+            topBar = {                                // Top app bar
+                CenterAlignedTopAppBar(               // Centered title style
                     title = { Text("Gallery Multiplatform", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(  // Semi-transparent
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
                 )
             },
-            floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    onClick = { showPicker = true },
+            floatingActionButton = {                  // Floating button to trigger picker
+                ExtendedFloatingActionButton(         // Button with icon + text
+                    onClick = { showPicker = true },  // Show picker when clicked
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("Pick Image") },
+                    text = { Text("Pick Image") }
                 )
             }
-        ) { paddingValues ->
-            Box(
+        ) { paddingValues ->                          // Content area with safe padding
+            Box(                                      // Full-screen container
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(MaterialTheme.colorScheme.background)
+                    .padding(paddingValues)           // Respect top bar & FAB padding
+                    .background(MaterialTheme.colorScheme.background)  // Dark background
             ) {
-                if (pickedImages.isEmpty()) {
+                if (pickedImages.isEmpty()) {         // Show empty state if no images
                     EmptyState(modifier = Modifier.align(Alignment.Center))
-                } else {
+                } else {                              // Otherwise show the image grid
                     ImageGrid(
                         images = pickedImages,
-                        onRemove = { pickedImages.remove(it) }
+                        onRemove = { pickedImages.remove(it) }  // Remove clicked image
                     )
                 }
             }
@@ -94,19 +90,22 @@ fun App() {
     }
 }
 
+/**
+ * Shown when no images have been picked yet.
+ */
 @Composable
-fun EmptyState(modifier: Modifier = Modifier) {
-    Column(
+fun EmptyState(modifier: Modifier = Modifier) {       // Centered placeholder UI
+    Column(                                           // Stack icon + text vertically
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
+        Icon(                                         // Subtle placeholder icon
             imageVector = Icons.Default.Face,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         )
-        Text(
+        Text(                                         // Message
             text = "Your gallery is empty",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -114,52 +113,56 @@ fun EmptyState(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Displays all picked images in a responsive grid.
+ */
 @Composable
 fun ImageGrid(images: List<ImageFile>, onRemove: (ImageFile) -> Unit) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 128.dp),
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    LazyVerticalGrid(                                 // Efficient vertical grid
+        columns = GridCells.Adaptive(minSize = 128.dp),  // Responsive columns
+        contentPadding = PaddingValues(16.dp),        // Outer spacing
+        horizontalArrangement = Arrangement.spacedBy(12.dp),  // Gap between columns
+        verticalArrangement = Arrangement.spacedBy(12.dp)     // Gap between rows
     ) {
-        items(images, key = { it.name }) { imageFile ->
+        items(images, key = { it.name }) { imageFile ->  // Each item keyed by name (stable)
             ImageCard(imageFile = imageFile, onRemove = { onRemove(imageFile) })
         }
     }
 }
 
+/**
+ * Single image card with remove button overlay.
+ */
 @Composable
 fun ImageCard(imageFile: ImageFile, onRemove: () -> Unit) {
-    Card(
-        modifier = Modifier.aspectRatio(1f).clip(RoundedCornerShape(12.dp)),
+    Card(                                             // Material 3 card with elevation
+        modifier = Modifier.aspectRatio(1f).clip(RoundedCornerShape(12.dp)),  // Square + rounded
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box {
-            // FIX: Call as an extension function on imageFile.data
-            // We use 'remember' to avoid re-decoding the image on every frame
-            val bitmap = remember(imageFile.data) {
+        Box {                                         // Stack image + remove button
+            // Decode bytes to ImageBitmap only once (remember key = data)
+            val bitmap = remember(imageFile.data) {   // Cache decoded bitmap
                 try {
-                    imageFile.data.decodeToImageBitmap()
-                } catch (e: Exception) {
+                    imageFile.data.decodeToImageBitmap()  // Multiplatform decoding
+                } catch (e: Exception) {              // Handle corrupt/invalid images
                     null
                 }
             }
 
-            if (bitmap != null) {
+            if (bitmap != null) {                     // Show image if decoding succeeded
                 Image(
                     bitmap = bitmap,
                     contentDescription = imageFile.name,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop      // Fill square + crop edges
                 )
-            } else {
-                // Optional: Show a placeholder if decoding fails
+            } else {                                  // Fallback placeholder on decode failure
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Face, null, tint = Color.Gray)
                 }
             }
 
-            IconButton(
+            IconButton(                               // Small remove button (top-right)
                 onClick = onRemove,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -167,7 +170,12 @@ fun ImageCard(imageFile: ImageFile, onRemove: () -> Unit) {
                     .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50))
                     .size(24.dp)
             ) {
-                Icon(Icons.Default.Clear, "Remove", tint = Color.White, modifier = Modifier.size(16.dp))
+                Icon(                                 // Clear (X) icon
+                    Icons.Default.Clear,
+                    "Remove",
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
