@@ -1,65 +1,55 @@
-package org.example.project                           // Our shared project package
+package org.example.project
 
-import androidx.compose.runtime.Composable              // Marks this as a composable function
-import androidx.compose.runtime.LaunchedEffect          // Runs side-effect when show changes
-import kotlinx.browser.document                        // Browser DOM access
-import org.khronos.webgl.ArrayBuffer                   // WebGL typed array buffer
-import org.khronos.webgl.Int8Array                      // 8-bit integer typed array
-import org.w3c.dom.HTMLInputElement                    // HTML <input> element type
-import org.w3c.files.FileReader                        // Reads file contents asynchronously
-import org.w3c.files.get                               // Extension to access file list by index
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.browser.document
+import org.khronos.webgl.ArrayBuffer
+import org.khronos.webgl.Int8Array
+import org.w3c.dom.HTMLInputElement
+import org.w3c.files.FileReader
+import org.w3c.files.get
 
-/**
- * Web (JavaScript/Wasm) actual implementation of cross-platform ImagePicker.
- * Creates a hidden <input type="file"> element → triggers file selection dialog
- * → reads selected image(s) as ByteArray → delivers to callback.
- *
- * @param show When true, programmatically trigger the file picker dialog
- * @param allowMultiple When true → allows selecting multiple images
- * @param onImagesSelected Callback receiving list of image bytes (empty on cancel/no selection)
- */
 @Composable
-internal actual fun ImagePicker(                      // Actual impl for Web/JS target
-    show: Boolean,                                    // Flag to trigger file picker
-    allowMultiple: Boolean,                           // Single or multi file selection
-    onImagesSelected: (List<ByteArray>) -> Unit       // Returns loaded image bytes
+internal actual fun ImagePicker(
+    show: Boolean,
+    allowMultiple: Boolean,
+    onImagesSelected: (images: List<ByteArray>) -> Unit
 ) {
-    LaunchedEffect(show) {                            // Only run when 'show' value changes
-        if (show) {                                   // Only proceed if show == true
-            val input = document.createElement("input") as HTMLInputElement  // Create hidden file input
-            input.type = "file"                           // Must be file input
-            input.accept = "image/*"                      // Restrict to image files only
-            input.multiple = allowMultiple                // Enable multi-select if requested
+    LaunchedEffect(show){
+        if (show){
+            val input = document.createElement("input") as HTMLInputElement
+            input.type = "file"
+            input.accept = "image/*"
+            input.multiple = allowMultiple
 
-            input.onchange = { event ->                   // Fired when user selects file(s)
-                val files = (event.target as? HTMLInputElement)?.files  // Get FileList
-                if (files != null && files.length > 0) {  // At least one file selected
-                    val byteArrays = mutableListOf<ByteArray>()  // Collect all results here
-                    var processed = 0                         // Counter to know when all are done
+            input.onchange = { event ->
+                val files = (event.target as? HTMLInputElement)?.files
+                if(files != null && files.length > 0){
+                    val byteArrays = mutableListOf<ByteArray>()
+                    var processed = 0
 
-                    for (i in 0 until files.length) {     // Loop over each selected file
-                        val reader = FileReader()             // Create new reader per file
+                    for (i in 0 until files.length){
+                        val reader = FileReader()
 
-                        reader.onload = { loadEvent ->        // Called when file reading finishes
-                            val buffer = loadEvent.target.asDynamic().result as? ArrayBuffer  // Get raw data
-                            if (buffer != null) {             // Successfully read
-                                byteArrays.add(Int8Array(buffer).unsafeCast<ByteArray>())  // Convert to Kotlin ByteArray
+                        reader.onload = {loadEvent ->
+                            val buffer = loadEvent.target.asDynamic().result as? ArrayBuffer
+                            if (buffer != null){
+                                byteArrays.add(Int8Array(buffer).unsafeCast<ByteArray>())
                             }
-                            processed++                       // One more file processed
+                            processed ++
 
-                            if (processed == files.length) {  // All files finished reading
-                                onImagesSelected(byteArrays)      // Deliver complete list
+                            if (processed == files.length){
+                                onImagesSelected(byteArrays)
                             }
                         }
-
-                        reader.readAsArrayBuffer(files[i]!!)  // Start async reading of file as bytes
+                        reader.readAsArrayBuffer(files[i]!!)
                     }
-                } else {                                      // User cancelled or no files
-                    onImagesSelected(emptyList())             // Return empty list (consistent API)
+                }else {
+                    onImagesSelected(emptyList())
                 }
             }
-
-            input.click()                                 // Programmatically open file picker dialog
+            input.click()
         }
+
     }
 }
